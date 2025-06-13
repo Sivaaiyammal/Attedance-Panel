@@ -15,6 +15,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
   const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadRecords();
@@ -24,17 +25,20 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
     filterRecords();
   }, [records, filter, dateRange]);
 
-  const loadRecords = () => {
-    let allRecords = getAttendanceRecords();
-    
-    if (!showAllUsers && userId) {
-      allRecords = allRecords.filter(record => record.userId === userId);
+  const loadRecords = async () => {
+    try {
+      setLoading(true);
+      let allRecords = await getAttendanceRecords();
+      
+      // Sort by date (newest first)
+      allRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      setRecords(allRecords);
+    } catch (error) {
+      console.error('Failed to load records:', error);
+    } finally {
+      setLoading(false);
     }
-    
-    // Sort by date (newest first)
-    allRecords.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    setRecords(allRecords);
   };
 
   const filterRecords = () => {
@@ -112,6 +116,17 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
     a.click();
     window.URL.revokeObjectURL(url);
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-center shadow-lg border border-white/20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading attendance records...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -214,7 +229,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
           </div>
         ) : (
           filteredRecords.map((record) => (
-            <div key={record.id} className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+            <div key={record._id || record.id} className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
               <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
@@ -269,11 +284,11 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                     
                     <button
                       onClick={() => setExpandedRecord(
-                        expandedRecord === record.id ? null : record.id
+                        expandedRecord === (record._id || record.id) ? null : (record._id || record.id)
                       )}
                       className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 touch-manipulation"
                     >
-                      {expandedRecord === record.id ? (
+                      {expandedRecord === (record._id || record.id) ? (
                         <ChevronUp className="w-5 h-5" />
                       ) : (
                         <ChevronDown className="w-5 h-5" />
@@ -293,7 +308,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                 )}
               </div>
               
-              {expandedRecord === record.id && (
+              {expandedRecord === (record._id || record.id) && (
                 <div className="border-t border-gray-200 bg-gray-50/50 p-4 sm:p-6">
                   <div className="space-y-6">
                     {/* All Entries */}
@@ -301,7 +316,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                       <h4 className="font-semibold text-gray-900 mb-3">All Check-ins & Check-outs</h4>
                       <div className="space-y-2">
                         {record.entries.map((entry, index) => (
-                          <div key={entry.id} className={`p-3 rounded-lg border ${
+                          <div key={entry._id || entry.id || index} className={`p-3 rounded-lg border ${
                             entry.type === 'check-in' 
                               ? 'bg-green-50 border-green-200' 
                               : 'bg-red-50 border-red-200'

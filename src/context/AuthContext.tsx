@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
+import { apiService } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -10,63 +11,43 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users data
-const mockUsers: User[] = [
-  {
-    id: '1',
-    username: 'admin',
-    password: 'admin123',
-    role: 'admin',
-    name: 'Admin User',
-    email: 'admin@company.com'
-  },
-  {
-    id: '2',
-    username: 'john',
-    password: 'john123',
-    role: 'user',
-    name: 'John Doe',
-    email: 'john@company.com'
-  },
-  {
-    id: '3',
-    username: 'jane',
-    password: 'jane123',
-    role: 'user',
-    name: 'Jane Smith',
-    email: 'jane@company.com'
-  }
-];
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check for saved user session
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const checkAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const userData = await apiService.getCurrentUser();
+          setUser(userData);
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          apiService.clearToken();
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
-    const foundUser = mockUsers.find(
-      u => u.username === username && u.password === password
-    );
-
-    if (foundUser) {
-      setUser(foundUser);
-      localStorage.setItem('currentUser', JSON.stringify(foundUser));
+    try {
+      const response = await apiService.login(username, password);
+      setUser(response.user);
       return true;
+    } catch (error) {
+      console.error('Login failed:', error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('currentUser');
+    apiService.clearToken();
   };
 
   return (

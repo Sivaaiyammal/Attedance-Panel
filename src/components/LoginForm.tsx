@@ -26,11 +26,6 @@ const LoginForm: React.FC = () => {
     }
   };
 
-  const demoCredentials = [
-    { role: 'Admin', username: 'admin', password: 'admin123' },
-    { role: 'User', username: 'john', password: 'john123' },
-    { role: 'User', username: 'jane', password: 'jane123' }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800 flex items-center justify-center p-4">
@@ -94,20 +89,6 @@ const LoginForm: React.FC = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
-            <p className="text-sm text-blue-100 mb-3 sm:mb-4 text-center">Demo Credentials:</p>
-            <div className="space-y-2">
-              {demoCredentials.map((cred, index) => (
-                <div key={index} className="bg-white/5 rounded-lg p-3 text-xs sm:text-sm">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                    <span className="text-blue-100 font-medium">{cred.role}:</span>
-                    <span className="text-blue-200 font-mono">{cred.username} / {cred.password}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

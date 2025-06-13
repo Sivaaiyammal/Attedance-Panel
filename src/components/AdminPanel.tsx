@@ -8,6 +8,7 @@ const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [allUserStats, setAllUserStats] = useState<{[userId: string]: UserStats}>({});
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEmployees: 0,
     todayPresent: 0,
@@ -22,57 +23,68 @@ const AdminPanel: React.FC = () => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const allRecords = getAttendanceRecords();
-    setRecords(allRecords);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const allRecords = await getAttendanceRecords();
+      setRecords(allRecords);
 
-    // Calculate statistics
-    const today = new Date().toISOString().split('T')[0];
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
+      // Calculate statistics
+      const today = new Date().toISOString().split('T')[0];
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
 
-    const todayRecords = allRecords.filter(record => record.date === today);
-    const monthlyRecords = allRecords.filter(record => {
-      const recordDate = new Date(record.date);
-      return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-    });
+      const todayRecords = allRecords.filter(record => record.date === today);
+      const monthlyRecords = allRecords.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+      });
 
-    const uniqueEmployees = new Set(allRecords.map(record => record.userId));
-    const presentToday = todayRecords.filter(record => record.entries.some(e => e.type === 'check-in')).length;
-    const totalEmployees = uniqueEmployees.size;
-    
-    const totalHoursThisMonth = monthlyRecords.reduce((sum, record) => {
-      return sum + (record.totalHours || 0);
-    }, 0);
+      const uniqueEmployees = new Set(allRecords.map(record => record.userId));
+      const presentToday = todayRecords.filter(record => record.entries.some(e => e.type === 'check-in')).length;
+      const totalEmployees = uniqueEmployees.size;
+      
+      const totalHoursThisMonth = monthlyRecords.reduce((sum, record) => {
+        return sum + (record.totalHours || 0);
+      }, 0);
 
-    const completedRecords = allRecords.filter(record => record.totalHours && record.totalHours > 0);
-    const avgHoursPerDay = completedRecords.length > 0 
-      ? completedRecords.reduce((sum, record) => sum + (record.totalHours || 0), 0) / completedRecords.length
-      : 0;
+      const completedRecords = allRecords.filter(record => record.totalHours && record.totalHours > 0);
+      const avgHoursPerDay = completedRecords.length > 0 
+        ? completedRecords.reduce((sum, record) => sum + (record.totalHours || 0), 0) / completedRecords.length
+        : 0;
 
-    // Calculate user stats for all users
-    const userStatsMap: {[userId: string]: UserStats} = {};
-    let totalWorkingDays = 0;
-    let totalLeaveDays = 0;
+      // Calculate user stats for all users
+      const userStatsMap: {[userId: string]: UserStats} = {};
+      let totalWorkingDays = 0;
+      let totalLeaveDays = 0;
 
-    uniqueEmployees.forEach(userId => {
-      const userStats = calculateUserStats(userId);
-      userStatsMap[userId] = userStats;
-      totalWorkingDays += userStats.totalWorkingDays;
-      totalLeaveDays += userStats.totalLeaveDays;
-    });
+      for (const userId of uniqueEmployees) {
+        try {
+          const userStats = await calculateUserStats(userId);
+          userStatsMap[userId] = userStats;
+          totalWorkingDays += userStats.totalWorkingDays;
+          totalLeaveDays += userStats.totalLeaveDays;
+        } catch (error) {
+          console.error(`Failed to calculate stats for user ${userId}:`, error);
+        }
+      }
 
-    setAllUserStats(userStatsMap);
+      setAllUserStats(userStatsMap);
 
-    setStats({
-      totalEmployees,
-      todayPresent: presentToday,
-      todayAbsent: Math.max(0, totalEmployees - presentToday),
-      avgHoursPerDay,
-      totalHoursThisMonth,
-      totalWorkingDays,
-      totalLeaveDays
-    });
+      setStats({
+        totalEmployees,
+        todayPresent: presentToday,
+        todayAbsent: Math.max(0, totalEmployees - presentToday),
+        avgHoursPerDay,
+        totalHoursThisMonth,
+        totalWorkingDays,
+        totalLeaveDays
+      });
+    } catch (error) {
+      console.error('Failed to load admin data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const tabs = [
@@ -121,7 +133,7 @@ const AdminPanel: React.FC = () => {
               const isCurrentlyCheckedIn = lastEntry?.type === 'check-in';
               
               return (
-                <div key={record.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
+                <div key={record.id || record.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center space-x-3 min-w-0 flex-1">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white text-sm font-bold">
@@ -249,6 +261,17 @@ const AdminPanel: React.FC = () => {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-center shadow-lg border border-white/20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading admin dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto">

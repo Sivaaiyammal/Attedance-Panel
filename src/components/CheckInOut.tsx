@@ -27,17 +27,25 @@ const CheckInOut: React.FC = () => {
     }
   }, [user]);
 
-  const loadTodaysRecord = () => {
+  const loadTodaysRecord = async () => {
     if (user) {
-      const record = getTodaysRecord(user.id);
-      setTodaysRecord(record);
+      try {
+        const record = await getTodaysRecord(user.id);
+        setTodaysRecord(record);
+      } catch (error) {
+        console.error('Failed to load today\'s record:', error);
+      }
     }
   };
 
-  const loadUserStats = () => {
+  const loadUserStats = async () => {
     if (user) {
-      const stats = calculateUserStats(user.id);
-      setUserStats(stats);
+      try {
+        const stats = await calculateUserStats(user.id);
+        setUserStats(stats);
+      } catch (error) {
+        console.error('Failed to load user stats:', error);
+      }
     }
   };
 
@@ -66,11 +74,12 @@ const CheckInOut: React.FC = () => {
 
     try {
       const location = await getLocationAndUpdateState();
-      const updatedRecord = addCheckInOutEntry(user.id, user.name, 'check-in', location);
+      const updatedRecord = await addCheckInOutEntry(user.id, user.name, 'check-in', location);
       setTodaysRecord(updatedRecord);
-      loadUserStats();
+      await loadUserStats();
     } catch (error) {
-      // Error already handled in getLocationAndUpdateState
+      console.error('Check-in failed:', error);
+      setError('Failed to check in. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -84,11 +93,12 @@ const CheckInOut: React.FC = () => {
 
     try {
       const location = await getLocationAndUpdateState();
-      const updatedRecord = addCheckInOutEntry(user.id, user.name, 'check-out', location);
+      const updatedRecord = await addCheckInOutEntry(user.id, user.name, 'check-out', location);
       setTodaysRecord(updatedRecord);
-      loadUserStats();
+      await loadUserStats();
     } catch (error) {
-      // Error already handled in getLocationAndUpdateState
+      console.error('Check-out failed:', error);
+      setError('Failed to check out. Please try again.');
     } finally {
       setIsLoading(false);
     }

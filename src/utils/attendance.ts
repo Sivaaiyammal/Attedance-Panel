@@ -1,63 +1,57 @@
 import { AttendanceRecord, CheckInOutEntry, UserStats } from '../types';
+import { apiService } from '../services/api';
 
-export const getAttendanceRecords = (): AttendanceRecord[] => {
-  const records = localStorage.getItem('attendanceRecords');
-  return records ? JSON.parse(records) : [];
-};
-
-export const saveAttendanceRecord = (record: AttendanceRecord): void => {
-  const records = getAttendanceRecords();
-  const existingIndex = records.findIndex(r => r.id === record.id);
-  
-  if (existingIndex >= 0) {
-    records[existingIndex] = record;
-  } else {
-    records.push(record);
+// These functions now use the API service instead of localStorage
+export const getAttendanceRecords = async (): Promise<AttendanceRecord[]> => {
+  try {
+    return await apiService.getAttendanceRecords();
+  } catch (error) {
+    console.error('Failed to get attendance records:', error);
+    return [];
   }
-  
-  localStorage.setItem('attendanceRecords', JSON.stringify(records));
 };
 
-export const getTodaysRecord = (userId: string): AttendanceRecord | null => {
-  const today = new Date().toISOString().split('T')[0];
-  const records = getAttendanceRecords();
-  return records.find(r => r.userId === userId && r.date === today) || null;
+export const getTodaysRecord = async (userId: string): Promise<AttendanceRecord | null> => {
+  try {
+    return await apiService.getTodaysRecord();
+  } catch (error) {
+    console.error('Failed to get today\'s record:', error);
+    return null;
+  }
 };
 
-export const addCheckInOutEntry = (userId: string, userName: string, type: 'check-in' | 'check-out', location: any): AttendanceRecord => {
-  const today = new Date().toISOString().split('T')[0];
-  const timestamp = new Date().toISOString();
-  
-  let record = getTodaysRecord(userId);
-  
-  if (!record) {
-    record = {
-      id: `${userId}-${today}`,
-      userId,
-      userName,
-      date: today,
-      entries: []
+export const addCheckInOutEntry = async (
+  userId: string, 
+  userName: string, 
+  type: 'check-in' | 'check-out', 
+  location: any
+): Promise<AttendanceRecord> => {
+  try {
+    return await apiService.addCheckInOut(type, location);
+  } catch (error) {
+    console.error('Failed to add check-in/out entry:', error);
+    throw error;
+  }
+};
+
+export const calculateUserStats = async (userId: string): Promise<UserStats> => {
+  try {
+    return await apiService.getUserStats(userId);
+  } catch (error) {
+    console.error('Failed to calculate user stats:', error);
+    return {
+      totalWorkingDays: 0,
+      totalLeaveDays: 0,
+      totalWorkingHours: 0,
+      monthlyHours: 0,
+      averageHoursPerDay: 0,
+      currentMonthWorkingDays: 0,
+      currentMonthLeaveDays: 0
     };
   }
-  
-  const newEntry: CheckInOutEntry = {
-    id: `${record.id}-${Date.now()}`,
-    timestamp,
-    type,
-    location
-  };
-  
-  record.entries.push(newEntry);
-  
-  // Calculate sessions and total hours
-  const sessions = calculateSessions(record.entries);
-  record.sessions = sessions;
-  record.totalHours = sessions.reduce((total, session) => total + session.hours, 0);
-  
-  saveAttendanceRecord(record);
-  return record;
 };
 
+// Keep these utility functions as they are still needed for client-side calculations
 export const calculateSessions = (entries: CheckInOutEntry[]) => {
   const sessions: { checkIn: string; checkOut: string; hours: number }[] = [];
   const sortedEntries = [...entries].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
@@ -112,49 +106,4 @@ export const formatDate = (date: string): string => {
     month: 'long',
     day: 'numeric'
   });
-};
-
-export const calculateUserStats = (userId: string): UserStats => {
-  const records = getAttendanceRecords().filter(r => r.userId === userId);
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
-  
-  // Calculate total working days (days with at least one check-in)
-  const totalWorkingDays = records.filter(r => (r.entries || []).some(e => e.type === 'check-in')).length;
-  
-  // Calculate total working hours
-  const totalWorkingHours = records.reduce((total, record) => total + (record.totalHours || 0), 0);
-  
-  // Calculate monthly stats
-  const monthlyRecords = records.filter(record => {
-    const recordDate = new Date(record.date);
-    return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-  });
-  
-  const currentMonthWorkingDays = monthlyRecords.filter(r => (r.entries || []).some(e => e.type === 'check-in')).length;
-  const monthlyHours = monthlyRecords.reduce((total, record) => total + (record.totalHours || 0), 0);
-  
-  // Calculate leave days (approximate - days in current month without attendance)
-  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-  const currentDayOfMonth = currentDate.getDate();
-  const workingDaysInMonth = Math.min(currentDayOfMonth, daysInMonth);
-  const currentMonthLeaveDays = Math.max(0, workingDaysInMonth - currentMonthWorkingDays);
-  
-  // Estimate total leave days (rough calculation)
-  const totalDaysTracked = records.length > 0 ? 
-    Math.ceil((new Date().getTime() - new Date(records[0].date).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-  const totalLeaveDays = Math.max(0, totalDaysTracked - totalWorkingDays);
-  
-  const averageHoursPerDay = totalWorkingDays > 0 ? totalWorkingHours / totalWorkingDays : 0;
-  
-  return {
-    totalWorkingDays,
-    totalLeaveDays,
-    totalWorkingHours,
-    monthlyHours,
-    averageHoursPerDay,
-    currentMonthWorkingDays,
-    currentMonthLeaveDays
-  };
 };
