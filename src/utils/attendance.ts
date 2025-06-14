@@ -24,10 +24,11 @@ export const addCheckInOutEntry = async (
   userId: string, 
   userName: string, 
   type: 'check-in' | 'check-out', 
-  location: any
+  location: any,
+  partyId?: string
 ): Promise<AttendanceRecord> => {
   try {
-    return await apiService.addCheckInOut(type, location);
+    return await apiService.addCheckInOut(type, location, partyId);
   } catch (error) {
     console.error('Failed to add check-in/out entry:', error);
     throw error;
@@ -53,7 +54,7 @@ export const calculateUserStats = async (userId: string): Promise<UserStats> => 
 
 // Keep these utility functions as they are still needed for client-side calculations
 export const calculateSessions = (entries: CheckInOutEntry[]) => {
-  const sessions: { checkIn: string; checkOut: string; hours: number }[] = [];
+  const sessions: { checkIn: string; checkOut: string; hours: number; partyId?: string; partyName?: string }[] = [];
   const sortedEntries = [...entries].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   
   let currentCheckIn: CheckInOutEntry | null = null;
@@ -66,7 +67,9 @@ export const calculateSessions = (entries: CheckInOutEntry[]) => {
       sessions.push({
         checkIn: currentCheckIn.timestamp,
         checkOut: entry.timestamp,
-        hours
+        hours,
+        partyId: currentCheckIn.partyId,
+        partyName: currentCheckIn.partyName
       });
       currentCheckIn = null;
     }

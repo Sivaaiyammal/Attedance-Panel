@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.js';
 import attendanceRoutes from './routes/attendance.js';
+import partyRoutes from './routes/party.js';
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/party', partyRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

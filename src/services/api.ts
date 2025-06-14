@@ -81,11 +81,11 @@ class ApiService {
     return response.json();
   }
 
-  async addCheckInOut(type: 'check-in' | 'check-out', location: any) {
+  async addCheckInOut(type: 'check-in' | 'check-out', location: any, partyId?: string) {
     const response = await fetch(`${API_BASE_URL}/attendance/checkin-checkout`, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({ type, location }),
+      body: JSON.stringify({ type, location, partyId }),
     });
 
     if (!response.ok) {
@@ -106,6 +106,72 @@ class ApiService {
 
     if (!response.ok) {
       throw new Error('Failed to get user stats');
+    }
+
+    return response.json();
+  }
+
+  // Party management methods
+  async getParties() {
+    const response = await fetch(`${API_BASE_URL}/party`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get parties');
+    }
+
+    return response.json();
+  }
+
+  async getAllParties() {
+    const response = await fetch(`${API_BASE_URL}/party/all`, {
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get all parties');
+    }
+
+    return response.json();
+  }
+
+  async createParty(name: string, description?: string) {
+    const response = await fetch(`${API_BASE_URL}/party`, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ name, description }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create party');
+    }
+
+    return response.json();
+  }
+
+  async updateParty(id: string, name: string, description?: string, isActive?: boolean) {
+    const response = await fetch(`${API_BASE_URL}/party/${id}`, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ name, description, isActive }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update party');
+    }
+
+    return response.json();
+  }
+
+  async deleteParty(id: string) {
+    const response = await fetch(`${API_BASE_URL}/party/${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete party');
     }
 
     return response.json();

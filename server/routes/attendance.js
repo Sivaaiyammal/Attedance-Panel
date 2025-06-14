@@ -1,5 +1,6 @@
 import express from 'express';
 import AttendanceRecord from '../models/AttendanceRecord.js';
+import Party from '../models/Party.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -16,6 +17,8 @@ router.get('/', authenticateToken, async (req, res) => {
 
     const records = await AttendanceRecord.find(query)
       .populate('userId', 'name email')
+      .populate('entries.partyId', 'name')
+      .populate('sessions.partyId', 'name')
       .sort({ date: -1 });
 
     res.json(records);
@@ -33,7 +36,8 @@ router.get('/today', authenticateToken, async (req, res) => {
     const record = await AttendanceRecord.findOne({
       userId: req.user.userId,
       date: today
-    });
+    }).populate('entries.partyId', 'name')
+      .populate('sessions.partyId', 'name');
 
     res.json(record);
   } catch (error) {
@@ -45,9 +49,22 @@ router.get('/today', authenticateToken, async (req, res) => {
 // Add check-in/check-out entry
 router.post('/checkin-checkout', authenticateToken, async (req, res) => {
   try {
-    const { type, location } = req.body;
+    const { type, location, partyId } = req.body;
     const today = new Date().toISOString().split('T')[0];
     const timestamp = new Date();
+
+    // Validate party for check-in
+    let party = null;
+    if (type === 'check-in') {
+      if (!partyId) {
+        return res.status(400).json({ message: 'Party selection is required for check-in' });
+      }
+
+      party = await Party.findById(partyId);
+      if (!party || !party.isActive) {
+        return res.status(400).json({ message: 'Invalid party selected' });
+      }
+    }
 
     // Find or create today's record
     let record = await AttendanceRecord.findOne({
@@ -71,6 +88,12 @@ router.post('/checkin-checkout', authenticateToken, async (req, res) => {
       location
     };
 
+    // Add party info for check-in
+    if (type === 'check-in' && party) {
+      newEntry.partyId = party._id;
+      newEntry.partyName = party.name;
+    }
+
     record.entries.push(newEntry);
 
     // Calculate sessions and total hours
@@ -79,6 +102,10 @@ router.post('/checkin-checkout', authenticateToken, async (req, res) => {
     record.totalHours = sessions.reduce((total, session) => total + session.hours, 0);
 
     await record.save();
+
+    // Populate party data before sending response
+    await record.populate('entries.partyId', 'name');
+    await record.populate('sessions.partyId', 'name');
 
     res.json(record);
   } catch (error) {
@@ -122,7 +149,9 @@ function calculateSessions(entries) {
       sessions.push({
         checkIn: currentCheckIn.timestamp,
         checkOut: entry.timestamp,
-        hours
+        hours,
+        partyId: currentCheckIn.partyId,
+        partyName: currentCheckIn.partyName
       });
       currentCheckIn = null;
     }

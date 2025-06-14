@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Filter, Download, ChevronDown, ChevronUp, Search, Play, Square } from 'lucide-react';
+import { Calendar, Clock, MapPin, Filter, Download, ChevronDown, ChevronUp, Search, Play, Square, Building2 } from 'lucide-react';
 import { getAttendanceRecords, formatTime, formatDate } from '../utils/attendance';
 import { AttendanceRecord } from '../types';
 
@@ -97,13 +97,14 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
 
   const exportData = () => {
     const csvContent = [
-      ['Date', 'Employee', 'Total Hours', 'Sessions', 'All Check-ins/Check-outs', 'Locations'],
+      ['Date', 'Employee', 'Total Hours', 'Sessions', 'All Check-ins/Check-outs', 'Party Names', 'Locations'],
       ...filteredRecords.map(record => [
         formatDate(record.date),
         record.userName,
         record.totalHours?.toString() || '0',
         record.sessions?.length.toString() || '0',
         record.entries.map(entry => `${entry.type}: ${formatTime(entry.timestamp)}`).join('; '),
+        record.entries.map(entry => entry.partyName || 'N/A').join('; '),
         record.entries.map(entry => entry.location.address || 'N/A').join('; ')
       ])
     ].map(row => row.join(',')).join('\n');
@@ -229,7 +230,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
           </div>
         ) : (
           filteredRecords.map((record) => (
-            <div key={record._id || record.id} className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+            <div key={record.id || record.id} className="bg-white/60 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
               <div className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
@@ -255,6 +256,14 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                             <Play className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span className="text-xs sm:text-sm">
                               {record.sessions.length} session{record.sessions.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )}
+                        {record.entries.some(e => e.partyName) && (
+                          <div className="flex items-center space-x-1 text-purple-600">
+                            <Building2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span className="text-xs sm:text-sm">
+                              {Array.from(new Set(record.entries.filter(e => e.partyName).map(e => e.partyName))).length} part{Array.from(new Set(record.entries.filter(e => e.partyName).map(e => e.partyName))).length !== 1 ? 'ies' : 'y'}
                             </span>
                           </div>
                         )}
@@ -284,11 +293,11 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                     
                     <button
                       onClick={() => setExpandedRecord(
-                        expandedRecord === (record._id || record.id) ? null : (record._id || record.id)
+                        expandedRecord === (record.id || record.id) ? null : (record.id || record.id)
                       )}
                       className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-200 touch-manipulation"
                     >
-                      {expandedRecord === (record._id || record.id) ? (
+                      {expandedRecord === (record.id || record.id) ? (
                         <ChevronUp className="w-5 h-5" />
                       ) : (
                         <ChevronDown className="w-5 h-5" />
@@ -308,7 +317,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                 )}
               </div>
               
-              {expandedRecord === (record._id || record.id) && (
+              {expandedRecord === (record.id || record.id) && (
                 <div className="border-t border-gray-200 bg-gray-50/50 p-4 sm:p-6">
                   <div className="space-y-6">
                     {/* All Entries */}
@@ -316,7 +325,7 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                       <h4 className="font-semibold text-gray-900 mb-3">All Check-ins & Check-outs</h4>
                       <div className="space-y-2">
                         {record.entries.map((entry, index) => (
-                          <div key={entry._id || entry.id || index} className={`p-3 rounded-lg border ${
+                          <div key={entry.id || entry.id || index} className={`p-3 rounded-lg border ${
                             entry.type === 'check-in' 
                               ? 'bg-green-50 border-green-200' 
                               : 'bg-red-50 border-red-200'
@@ -341,6 +350,12 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                                   <p className="text-sm text-gray-600">
                                     {new Date(entry.timestamp).toLocaleString()}
                                   </p>
+                                  {entry.partyName && (
+                                    <p className="text-xs text-gray-600 flex items-center space-x-1 mt-1">
+                                      <Building2 className="w-3 h-3" />
+                                      <span>{entry.partyName}</span>
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                               <MapPin className="w-4 h-4 text-gray-400" />
@@ -366,6 +381,12 @@ const ReportsList: React.FC<ReportsListProps> = ({ userId, showAllUsers = false 
                                   <p className="text-blue-600">
                                     {formatTime(session.checkIn)} - {formatTime(session.checkOut)}
                                   </p>
+                                  {session.partyName && (
+                                    <p className="text-xs text-blue-600 flex items-center space-x-1 mt-1">
+                                      <Building2 className="w-3 h-3" />
+                                      <span>{session.partyName}</span>
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="font-semibold text-blue-800">
                                   {session.hours.toFixed(1)}h

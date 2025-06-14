@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, Download, Calendar, Clock, MapPin, TrendingUp, Filter, UserCheck, UserX } from 'lucide-react';
+import { Users, BarChart3, Download, Calendar, Clock, MapPin, TrendingUp, Filter, UserCheck, UserX, Building2 } from 'lucide-react';
 import { getAttendanceRecords, calculateUserStats } from '../utils/attendance';
 import { AttendanceRecord, UserStats } from '../types';
 import ReportsList from './ReportsList';
+import PartyManagement from './PartyManagement';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -89,7 +90,8 @@ const AdminPanel: React.FC = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: BarChart3 },
-    { id: 'reports', label: 'All Reports', icon: Users }
+    { id: 'reports', label: 'All Reports', icon: Users },
+    { id: 'parties', label: 'Party Management', icon: Building2 }
   ];
 
   const StatCard: React.FC<{
@@ -151,6 +153,12 @@ const AdminPanel: React.FC = () => {
                           <span className="flex items-center space-x-1">
                             <BarChart3 className="w-3 h-3" />
                             <span>{record.sessions.length} session{record.sessions.length !== 1 ? 's' : ''}</span>
+                          </span>
+                        )}
+                        {lastEntry?.partyName && (
+                          <span className="flex items-center space-x-1">
+                            <Building2 className="w-3 h-3" />
+                            <span className="truncate">{lastEntry.partyName}</span>
                           </span>
                         )}
                       </div>
@@ -374,6 +382,10 @@ const AdminPanel: React.FC = () => {
 
       {activeTab === 'reports' && (
         <ReportsList showAllUsers={true} />
+      )}
+
+      {activeTab === 'parties' && (
+        <PartyManagement />
       )}
     </div>
   );

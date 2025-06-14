@@ -24,6 +24,19 @@ const checkInOutEntrySchema = new mongoose.Schema({
       type: String,
       default: ''
     }
+  },
+  partyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Party',
+    required: function() {
+      return this.type === 'check-in';
+    }
+  },
+  partyName: {
+    type: String,
+    required: function() {
+      return this.type === 'check-in';
+    }
   }
 });
 
@@ -38,6 +51,15 @@ const sessionSchema = new mongoose.Schema({
   },
   hours: {
     type: Number,
+    required: true
+  },
+  partyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Party',
+    required: true
+  },
+  partyName: {
+    type: String,
     required: true
   }
 });

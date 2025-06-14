@@ -6,6 +6,7 @@ import ReportsList from './ReportsList';
 import AdminPanel from './AdminPanel';
 import logo from '../assets/logo-teeku.webp';
 
+
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('checkin');
@@ -56,18 +57,16 @@ const Dashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              {/* <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center"> */}
-                {/* <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-white" /> */}
-                
-              {/* </div> */}
+              {/* <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+              </div> */}
               <div>
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Attendance Portal</h1>
                 <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Welcome back, {user?.name}</p>
               </div>
             </div>
-            
             <img src={logo}  alt="Logo"  className="w-auto  h-auto"/>
-
+            
             {/* Desktop Header Right */}
             <div className="hidden lg:flex items-center space-x-6">
               <div className="text-right">

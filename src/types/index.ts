@@ -7,6 +7,19 @@ export interface User {
   email: string;
 }
 
+export interface Party {
+  _id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  createdBy: {
+    _id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CheckInOutEntry {
   id: string;
   timestamp: string;
@@ -16,6 +29,8 @@ export interface CheckInOutEntry {
     longitude: number;
     address?: string;
   };
+  partyId?: string;
+  partyName?: string;
 }
 
 export interface AttendanceRecord {
@@ -29,6 +44,8 @@ export interface AttendanceRecord {
     checkIn: string;
     checkOut: string;
     hours: number;
+    partyId: string;
+    partyName: string;
   }[];
 }
 

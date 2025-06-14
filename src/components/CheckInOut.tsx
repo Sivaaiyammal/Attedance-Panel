@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, Play, Square, BarChart3, Calendar } from 'lucide-react';
+import { Clock, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, Play, Square, BarChart3, Calendar, Building2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentLocation } from '../utils/geolocation';
 import { 
@@ -9,12 +9,15 @@ import {
   formatTime,
   calculateUserStats
 } from '../utils/attendance';
-import { AttendanceRecord, Location, UserStats } from '../types';
+import { AttendanceRecord, Location, UserStats, Party } from '../types';
+import { apiService } from '../services/api';
 
 const CheckInOut: React.FC = () => {
   const { user } = useAuth();
   const [todaysRecord, setTodaysRecord] = useState<AttendanceRecord | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [selectedParty, setSelectedParty] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
@@ -24,6 +27,7 @@ const CheckInOut: React.FC = () => {
     if (user) {
       loadTodaysRecord();
       loadUserStats();
+      loadParties();
     }
   }, [user]);
 
@@ -49,6 +53,15 @@ const CheckInOut: React.FC = () => {
     }
   };
 
+  const loadParties = async () => {
+    try {
+      const partiesData = await apiService.getParties();
+      setParties(partiesData);
+    } catch (error) {
+      console.error('Failed to load parties:', error);
+    }
+  };
+
   const getLocationAndUpdateState = async () => {
     setLocationLoading(true);
     setError('');
@@ -69,14 +82,20 @@ const CheckInOut: React.FC = () => {
   const handleCheckIn = async () => {
     if (!user) return;
 
+    if (!selectedParty) {
+      setError('Please select a party before checking in');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
       const location = await getLocationAndUpdateState();
-      const updatedRecord = await addCheckInOutEntry(user.id, user.name, 'check-in', location);
+      const updatedRecord = await addCheckInOutEntry(user.id, user.name, 'check-in', location, selectedParty);
       setTodaysRecord(updatedRecord);
       await loadUserStats();
+      setSelectedParty(''); // Reset party selection after check-in
     } catch (error) {
       console.error('Check-in failed:', error);
       setError('Failed to check in. Please try again.');
@@ -227,10 +246,40 @@ const CheckInOut: React.FC = () => {
           )}
 
           <div className="space-y-4">
+            {/* Party Selection for Check-in */}
+            {currentStatus !== 'checked-in' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Party <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <select
+                    value={selectedParty}
+                    onChange={(e) => setSelectedParty(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base bg-white"
+                    required
+                  >
+                    <option value="">Choose a party...</option>
+                    {parties.map((party) => (
+                      <option key={party._id} value={party._id}>
+                        {party.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {parties.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    No parties available. Contact admin to add parties.
+                  </p>
+                )}
+              </div>
+            )}
+
             {currentStatus !== 'checked-in' && (
               <button
                 onClick={handleCheckIn}
-                disabled={isLoading}
+                disabled={isLoading || !selectedParty}
                 className="w-full bg-gradient-to-r from-emerald-500 to-green-500 text-white py-4 px-6 rounded-xl font-semibold text-base sm:text-lg hover:from-emerald-600 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 touch-manipulation"
               >
                 {isLoading ? (
@@ -291,7 +340,7 @@ const CheckInOut: React.FC = () => {
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-900">All Check-ins & Check-outs</h4>
                 {todaysRecord.entries.map((entry, index) => (
-                  <div key={entry.id} className={`flex items-center justify-between p-3 rounded-lg border ${
+                  <div key={entry.id || index} className={`flex items-center justify-between p-3 rounded-lg border ${
                     entry.type === 'check-in' 
                       ? 'bg-green-50 border-green-200' 
                       : 'bg-red-50 border-red-200'
@@ -317,6 +366,12 @@ const CheckInOut: React.FC = () => {
                         }`}>
                           {formatTime(entry.timestamp)}
                         </p>
+                        {entry.partyName && (
+                          <p className="text-xs text-gray-600 flex items-center space-x-1">
+                            <Building2 className="w-3 h-3" />
+                            <span>{entry.partyName}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -344,6 +399,12 @@ const CheckInOut: React.FC = () => {
                             <span className="text-gray-600">
                               {formatTime(session.checkIn)} - {formatTime(session.checkOut)}
                             </span>
+                            {session.partyName && (
+                              <p className="text-xs text-gray-500 flex items-center space-x-1 mt-1">
+                                <Building2 className="w-3 h-3" />
+                                <span>{session.partyName}</span>
+                              </p>
+                            )}
                           </div>
                           <div className="font-semibold text-gray-900">
                             {session.hours.toFixed(1)}h
@@ -377,7 +438,7 @@ const CheckInOut: React.FC = () => {
               <Clock className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-500">No activity recorded today</p>
               <p className="text-sm text-gray-400 mt-2">
-                Click the check-in button to start tracking your time
+                Select a party and click the check-in button to start tracking your time
               </p>
             </div>
           )}
