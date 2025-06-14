@@ -26,11 +26,11 @@ const LoginForm: React.FC = () => {
     }
   };
 
-  const demoCredentials = [
-    { role: 'Admin', username: 'admin', password: 'admin123' },
-    { role: 'User', username: 'john', password: 'john123' },
-    { role: 'User', username: 'jane', password: 'jane123' }
-  ];
+  // const demoCredentials = [
+  //   { role: 'Admin', username: 'admin', password: 'admin123' },
+  //   { role: 'User', username: 'john', password: 'john123' },
+  //   { role: 'User', username: 'jane', password: 'jane123' }
+  // ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800 flex items-center justify-center p-4">
@@ -95,7 +95,7 @@ const LoginForm: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
+          {/* <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
             <p className="text-sm text-blue-100 mb-3 sm:mb-4 text-center">Demo Credentials:</p>
             <div className="space-y-2">
               {demoCredentials.map((cred, index) => (
@@ -107,7 +107,7 @@ const LoginForm: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
