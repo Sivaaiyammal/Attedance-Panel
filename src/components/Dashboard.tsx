@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MapPin, LogOut, Users, BarChart3, Menu, X } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import CheckInOut from './CheckInOut';
 import ReportsList from './ReportsList';
 import AdminPanel from './AdminPanel';

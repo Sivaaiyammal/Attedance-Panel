@@ -1,5 +1,6 @@
 // const API_BASE_URL = 'http://localhost:3001/api';
-const API_BASE_URL = 'https://attedance-panel.onrender.com/api';
+// const API_BASE_URL = 'https://attedance-panel.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 class ApiService {
   private token: string | null = null;
@@ -45,6 +46,57 @@ class ApiService {
     this.setToken(data.token);
     return data;
   }
+
+  async forgotPassword(email: string) {
+  const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: this.getHeaders(),
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send reset link');
+  }
+
+  return response.json(); // Expecting: { message: "Reset link sent" }
+}
+
+async requestOtp(email: string) {
+  const response = await fetch(`${API_BASE_URL}/auth/request-otp`, {
+    method: 'POST',
+    headers: this.getHeaders(),
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) throw new Error('Failed to send OTP');
+  return response.json();
+}
+
+async verifyOtp(email: string, otp: string) {
+  const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+    method: 'POST',
+    headers: this.getHeaders(),
+    body: JSON.stringify({ email, otp }),
+  });
+
+  if (!response.ok) throw new Error('OTP verification failed');
+  return response.json();
+}
+
+async resetPassword(email: string, newPassword: string, otp: string) {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: this.getHeaders(),
+    body: JSON.stringify({ email, newPassword, otp })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to reset password');
+  }
+
+  return response.json();
+}
 
   async getCurrentUser() {
     const response = await fetch(`${API_BASE_URL}/auth/me`, {

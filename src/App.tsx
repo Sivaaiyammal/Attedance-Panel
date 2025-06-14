@@ -1,7 +1,12 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
+// import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import LoginForm from './components/LoginForm';
 import Dashboard from './components/Dashboard';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import ForgotPassword from './components/ForgotPassword'; 
+// import './testEnv';
 
 const AppContent: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -23,7 +28,12 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AppContent />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

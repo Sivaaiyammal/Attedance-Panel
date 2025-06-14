@@ -29,6 +29,8 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  resetOtp: { type: String, default: null },
+  resetOtpExpires: { type: Date, default: null },
   isActive: {
     type: Boolean,
     default: true
@@ -51,9 +53,10 @@ userSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = function (plainPassword) {
+  return bcrypt.compare(plainPassword, this.password);
 };
+
 
 // Remove password from JSON output
 userSchema.methods.toJSON = function() {

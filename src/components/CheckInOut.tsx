@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, MapPin, CheckCircle, XCircle, Loader2, AlertCircle, Play, Square, BarChart3, Calendar, Building2 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { getCurrentLocation } from '../utils/geolocation';
 import { 
   getTodaysRecord, 

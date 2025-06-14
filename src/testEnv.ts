@@ -1,0 +1,1 @@
+console.log("Env Test:", import.meta.env.VITE_API_BASE_URL);

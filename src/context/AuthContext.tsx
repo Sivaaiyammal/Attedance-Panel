@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
 import { apiService } from '../services/api';
 
@@ -6,17 +6,20 @@ interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
+  forgotPassword: (email: string) => Promise<string>;
+  requestOtp: (email: string) => Promise<string>;
+  verifyOtp: (email: string, otp: string) => Promise<boolean>;
+  resetPassword: (email: string, newPassword: string, otp: string) => Promise<string>;
   isLoading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for saved user session
     const checkAuth = async () => {
       const token = localStorage.getItem('authToken');
       if (token) {
@@ -45,22 +48,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const forgotPassword = async (email: string): Promise<string> => {
+  try {
+    const result = await apiService.forgotPassword(email);
+    return result.message || 'Reset link sent successfully.';
+  } catch (error: any) {
+    console.error('Forgot password error:', error);
+    throw new Error(error.message || 'Failed to send reset link.');
+  }
+};
+
+const requestOtp = async (email: string): Promise<string> => {
+  const result = await apiService.requestOtp(email);
+  return result.message;
+};
+
+const verifyOtp = async (email: string, otp: string): Promise<boolean> => {
+  const result = await apiService.verifyOtp(email, otp);
+  return result.success;
+};
+
+const resetPassword = async (email: string, newPassword: string, otp: string): Promise<string> => {
+  const result = await apiService.resetPassword(email, newPassword, otp);
+  return result.message;
+};
+
   const logout = () => {
     setUser(null);
     apiService.clearToken();
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, forgotPassword,requestOtp,verifyOtp,resetPassword,isLoading }}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

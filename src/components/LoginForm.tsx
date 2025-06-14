@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { LogIn, User, Lock, AlertCircle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+// import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
+import logo from '../assets/logo-teeku.webp';
+import { Link } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -8,6 +11,7 @@ const LoginForm: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,20 +30,15 @@ const LoginForm: React.FC = () => {
     }
   };
 
-  // const demoCredentials = [
-  //   { role: 'Admin', username: 'admin', password: 'admin123' },
-  //   { role: 'User', username: 'john', password: 'john123' },
-  //   { role: 'User', username: 'jane', password: 'jane123' }
-  // ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/20">
           <div className="text-center mb-6 sm:mb-8">
-            <div className="mx-auto w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center mb-4">
-              <LogIn className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+            <div className="flex items-center justify-center mb-8  rounded-full">
+            <img src={logo} alt="Logo" className="max-w-[auto] max-h-[auto] object-contain" style={{ filter: 'drop-shadow(16px 16px 20px red) invert(120%)'}} />
             </div>
+            {/* <img src={logo}  alt="Logo"  className="w-auto  h-auto"/> */}
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Welcome Back</h2>
             <p className="text-blue-100 text-sm sm:text-base">Sign in to your attendance portal</p>
           </div>
@@ -77,6 +76,10 @@ const LoginForm: React.FC = () => {
                   required
                 />
               </div>
+              <Link to="/forgot-password" className="text-sm text-blue-200 hover:text-blue-100 block mt-2">
+                Forgot Password?
+              </Link>
+
             </div>
 
             {error && (
@@ -94,20 +97,6 @@ const LoginForm: React.FC = () => {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          {/* <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
-            <p className="text-sm text-blue-100 mb-3 sm:mb-4 text-center">Demo Credentials:</p>
-            <div className="space-y-2">
-              {demoCredentials.map((cred, index) => (
-                <div key={index} className="bg-white/5 rounded-lg p-3 text-xs sm:text-sm">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-1 sm:space-y-0">
-                    <span className="text-blue-100 font-medium">{cred.role}:</span>
-                    <span className="text-blue-200 font-mono">{cred.username} / {cred.password}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div> */}
         </div>
       </div>
     </div>

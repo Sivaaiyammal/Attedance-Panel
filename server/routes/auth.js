@@ -1,5 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { sendOtpMail } from '../utils/sendOtpMail.js';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 
 const router = express.Router();
@@ -103,5 +106,98 @@ router.get('/me', async (req, res) => {
     res.status(401).json({ message: 'Invalid token' });
   }
 });
+
+router.post('/request-otp', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email, isActive: true });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    const expires = Date.now() + 5 * 60 * 1000; // 5 mins
+
+    user.resetOtp = otp;
+    user.resetOtpExpires = expires;
+    await user.save();
+
+    await sendOtpMail(email, otp); // You must have nodemailer set up
+
+    res.json({ message: 'OTP sent to your email.' });
+  } catch (err) {
+    console.error('OTP send error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const user = await User.findOne({ email, isActive: true });
+
+    if (!user || user.resetOtp !== otp || user.resetOtpExpires < Date.now()) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Optional: clear OTP after successful verification
+    user.resetOtp = null;
+    user.resetOtpExpires = null;
+    await user.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.post('/reset-password', async (req, res) => {
+  const { email, newPassword, otp } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+
+    // console.log('OTP received:', otp);
+    // console.log('OTP stored:', user.resetOtp);
+    // console.log('OTP expires at:', user.resetOtpExpires, 'Current time:', Date.now());
+
+    user.resetOtp = otp;
+    user.resetOtpExpires = Date.now() + 5 * 60 * 1000;
+    // console.log('Setting OTP:', user.resetOtp);
+    // console.log('Setting Expires:', user.resetOtpExpires);
+
+    await user.save();
+    // console.log('After save OTP:', user.resetOtp);
+
+
+    if (user.resetOtp !== otp) {
+      return res.status(400).json({ message: 'OTP does not match' });
+    }
+
+    if (user.resetOtpExpires < Date.now()) {
+      return res.status(400).json({ message: 'OTP expired' });
+    }
+
+    // const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = newPassword;
+    user.resetOtp = null;
+    user.resetOtpExpires = null;
+    await user.save();
+
+    res.json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 
 export default router;
